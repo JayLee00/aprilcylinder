@@ -51,6 +51,28 @@ def _cmd_selftest(a):
                   f"max {r['angle_err_max_deg']:.2f} deg")
 
 
+def _cmd_view(a):
+    from .viewer import demo_fixture, fixture_from_stl, scene_payload, write_viewer
+    fixture, name = None, None
+    if a.fixture == "demo":
+        fixture, seat = demo_fixture()
+        name = "demo base"
+        if a.seat is None:
+            a.seat = seat
+    elif a.fixture:
+        fixture = fixture_from_stl(a.fixture, a.fixture_up_axis, a.fixture_axis)
+        name = Path(a.fixture).stem
+    scenes = [scene_payload(m, fixture=fixture, seat_z=a.seat or 0.0, fixture_name=name) for m in a.models]
+    out = write_viewer(scenes, a.output, title=a.title)
+    print(f"wrote {out} (open it in a browser; needs internet for three.js)")
+
+
+def _cmd_obj(a):
+    from .viewer import export_obj
+    out = export_obj(a.model, a.output)
+    print(f"wrote {out} and {out.with_suffix('.mtl')}")
+
+
 def _cmd_track(a):
     import cv2
     import numpy as np
@@ -148,6 +170,22 @@ def main(argv=None):
     t.add_argument("--frames", type=int, default=36)
     t.add_argument("--fx", type=float, default=900.0, help="focal length in px of the virtual 1280x720 camera")
     t.set_defaults(func=_cmd_selftest)
+
+    v = sub.add_parser("view", help="interactive 3D viewer (HTML) with the target turning about Z")
+    v.add_argument("models", nargs="+", help="model folders")
+    v.add_argument("-o", "--output", default="viewer.html")
+    v.add_argument("--title", default="aprilcylinder viewer")
+    v.add_argument("--fixture", help="fixed part to show under the target: an STL path, or 'demo'")
+    v.add_argument("--fixture-up-axis", choices=["x", "y", "z"], default="z")
+    v.add_argument("--fixture-axis", type=float, nargs=2, default=[0.0, 0.0], metavar=("X", "Y"),
+                   help="where the rotation axis is in the fixture (after --fixture-up-axis), mm")
+    v.add_argument("--seat", type=float, help="height of the target bottom above the fixture's z = 0, mm")
+    v.set_defaults(func=_cmd_view)
+
+    o = sub.add_parser("export-obj", help="export a target as OBJ + MTL (black / white materials) for CAD tools")
+    o.add_argument("model")
+    o.add_argument("-o", "--output", required=True)
+    o.set_defaults(func=_cmd_obj)
 
     k = sub.add_parser("track", help="live angle / axis tracking from a webcam")
     k.add_argument("model")
