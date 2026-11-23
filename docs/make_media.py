@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from aprilcylinder.cylinder import generate, load_spec  # noqa: E402
 from aprilcylinder.synth import load_painted_mesh  # noqa: E402
-from aprilcylinder.viewer import demo_fixture, scene_payload, write_viewer  # noqa: E402
+from aprilcylinder.viewer import demo_fixture, fixture_from_stl, scene_payload, write_viewer  # noqa: E402
 
 OUT = ROOT / "out" / "media"
 DOCS = ROOT / "docs"
@@ -85,33 +85,46 @@ def render_frame(parts, markers, angle, size=(560, 600), seat=0.0):
     return img
 
 
-def main():
+def write_gif(model_dir, fixture, seat, scene, out_gif):
     from PIL import Image
 
-    spec, _ = load_spec(ROOT / "examples" / "band8_d50_h120.yaml")
-    generate(spec, OUT / "band8_d50_h120", preview=False)
-    spec2, _ = load_spec(ROOT / "examples" / "two_bands_hex.yaml")
-    generate(spec2, OUT / "two_bands_hex", preview=False)
-    (fV, fF), seat = demo_fixture()
-
-    scene = scene_payload(OUT / "band8_d50_h120", label="octagon band on a demo base", fixture=(fV, fF),
-                          seat_z=seat, fixture_name="demo base")
-    write_viewer([scene,
-                  scene_payload(OUT / "band8_d50_h120", label="octagon band"),
-                  scene_payload(OUT / "two_bands_hex", label="two hexagon bands")],
-                 DOCS / "index.html", title="aprilcylinder viewer")
-
-    V, T = load_painted_mesh(OUT / "band8_d50_h120")
+    fV, fF = fixture
+    V, T = load_painted_mesh(model_dir)
     V = V + np.array([0, 0, seat])
     white, black, base = (236, 236, 232), (22, 21, 20), (166, 154, 143)
     parts = [(np.asarray(fV, float), fF, [base] * len(fF), False),
              (V, np.array([t[:3] for t in T]), [white if t[3] else black for t in T], True)]
-    markers = [m for m in scene["markers"]]
-    frames = [render_frame(parts, markers, a) for a in np.arange(0, 360, 7.5)]
+    frames = [render_frame(parts, scene["markers"], a) for a in np.arange(0, 360, 7.5)]
     imgs = [Image.fromarray(cv2.cvtColor(f, cv2.COLOR_BGR2RGB)).quantize(colors=96, method=Image.Quantize.MEDIANCUT)
             for f in frames]
-    imgs[0].save(DOCS / "demo.gif", save_all=True, append_images=imgs[1:], duration=70, loop=0, optimize=True)
-    print("wrote", DOCS / "demo.gif", "and", DOCS / "index.html")
+    imgs[0].save(out_gif, save_all=True, append_images=imgs[1:], duration=70, loop=0, optimize=True)
+
+
+def main():
+    spec, _ = load_spec(ROOT / "examples" / "band8_d50_h120.yaml")
+    generate(spec, OUT / "band8_d50_h120", preview=False)
+    spec2, _ = load_spec(ROOT / "examples" / "two_bands_hex.yaml")
+    generate(spec2, OUT / "two_bands_hex", preview=False)
+    demo, seat = demo_fixture()
+    demo_scene = scene_payload(OUT / "band8_d50_h120", label="octagon band on a demo base", fixture=demo,
+                               seat_z=seat, fixture_name="demo base")
+
+    # a real rotation jig: a SolidWorks cap with an octagonal band, painted with `aprilcyl paint-stl`,
+    # turning on the post of its base (axis at x = 25, y = 25 in the base STL, cap seated on the 8 mm plate)
+    jig = ROOT / "examples" / "rotation_jig"
+    base = fixture_from_stl(jig / "rotation_base_zig_v1.1.STL", "y", (25.0, 25.0))
+    jig_scene = scene_payload(jig / "cap_h120", label="rotation jig (cap h120 on base v1.1)", fixture=base,
+                              seat_z=8.0, fixture_name="rotation_base_zig_v1.1")
+
+    write_viewer([jig_scene,
+                  demo_scene,
+                  scene_payload(jig / "cap_50mm", label="cap 50 mm"),
+                  scene_payload(OUT / "band8_d50_h120", label="octagon band"),
+                  scene_payload(OUT / "two_bands_hex", label="two hexagon bands")],
+                 DOCS / "index.html", title="aprilcylinder viewer")
+    write_gif(jig / "cap_h120", base, 8.0, jig_scene, DOCS / "rotation_jig.gif")
+    write_gif(OUT / "band8_d50_h120", demo, seat, demo_scene, DOCS / "demo.gif")
+    print("wrote", DOCS / "rotation_jig.gif", DOCS / "demo.gif", "and", DOCS / "index.html")
 
 
 if __name__ == "__main__":

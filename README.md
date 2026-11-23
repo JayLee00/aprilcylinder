@@ -1,7 +1,7 @@
 # aprilcylinder
 
 <p align="center">
-  <a href="https://jaylee00.github.io/aprilcylinder/"><img src="docs/demo.gif" width="460" alt="A cylinder target with an octagonal marker band turning about Z on a base; the IDs of the tags facing the camera change with the angle"></a>
+  <a href="https://jaylee00.github.io/aprilcylinder/"><img src="docs/rotation_jig.gif" width="460" alt="A rotation jig: a cap with an octagonal marker band turning about Z on the post of its base; the IDs of the tags facing the camera change with the angle"></a>
 </p>
 <p align="center"><b><a href="https://jaylee00.github.io/aprilcylinder/">Open the interactive 3D viewer</a></b>: drag to orbit, turn the 1-DoF joint about Z, see which tags face the camera.</p>
 
@@ -116,6 +116,52 @@ marker. Only those faces are re-meshed; the mesh stays closed and the volume is 
 `--up-axis` names the STL axis that becomes +Z (SolidWorks exports are usually `y`). Faces with a
 fillet or hole running into them are not squares and are skipped.
 
+A worked example with a real part is below.
+
+## Example: a rotation jig
+
+[`examples/rotation_jig`](examples/rotation_jig) is a real 1-DoF jig used in experiments: a printed cap
+(50 mm shaft, 120 mm long, filleted) slides over the 15 mm post of a 64 x 64 mm base and turns about
+Z. The cap was modelled in SolidWorks with an octagon of **22 mm square faces** at the bottom and a
+**square inscribed in the top face** (35.36 mm), and nothing else was changed.
+
+<img src="examples/rotation_jig/cap_h120/thumbnail.png" width="420" alt="Painted cap: eight tags on the octagonal band and one on the top face">
+
+The animation at the top of this page and the first scene of the
+[3D viewer](https://jaylee00.github.io/aprilcylinder/) are this jig.
+
+```bash
+cd examples/rotation_jig
+aprilcyl paint-stl rotation_cap_zig_v1.0_h120_d50_fllet.STL --up-axis y --first-id 810 -o cap_h120
+aprilcyl selftest cap_h120 --distance 400 700
+aprilcyl view cap_h120 --fixture rotation_base_zig_v1.1.STL --fixture-up-axis y --fixture-axis 25 25 --seat 8 -o jig.html
+```
+
+```text
+rotation_cap_zig_v1.0_h120_d50_fllet.STL: 8 side + 1 cap markers, IDs 810-818 (4x4_1000)
+face 22 mm -> tag 20.00 mm   face 35.36 mm -> tag 33.36 mm   margin 1 mm, body white
+mesh closed: True, volume 215392.9 mm3 (original 215392.9), triangles 5202
+```
+
+| Distance | View | Detected | Angle error mean / max |
+|---|---|---|---|
+| 400 mm | side | 36 / 36 | 0.34 / 1.37 deg |
+| 400 mm | 45 deg | 36 / 36 | 0.15 / 0.48 deg |
+| 400 mm | top | 36 / 36 | 0.15 / 0.81 deg |
+| 700 mm | side | 36 / 36 | 0.93 / 4.04 deg |
+| 700 mm | 45 deg | 36 / 36 | 0.41 / 1.59 deg |
+| 700 mm | top | 34 / 36 | 0.17 / 0.56 deg |
+
+The folder holds the STLs, the painted 3MFs ready for Bambu Studio and the detector `config.json`
+files. `cap_50mm` is a shorter cap of the same design (IDs 800-808); its bore is closed 88 mm up, so
+it does not fit this base, whose post stands 100 mm above the plate. Track the jig with
+
+```python
+trk = CylinderTracker("examples/rotation_jig/cap_h120", intrinsics)
+```
+
+and `st.angle_deg` is the joint angle. The fillet does not matter: only the flat squares carry tags.
+
 ## Print (Bambu Studio)
 
 1. Open the `.3mf`. Filament **1 = black, 2 = white** (PLA, matte if you have it).
@@ -173,6 +219,8 @@ aprilcyl track models/shaft50 --camera 0 --intrinsics calib.json
 
 ## See it in 3D
 
+![A generated octagon-band target on a generic demo base](docs/demo.gif)
+
 ```bash
 aprilcyl view models/shaft50 -o shaft50.html                     # the target alone
 aprilcyl view models/shaft50 --fixture demo -o shaft50_demo.html  # on a generic base
@@ -192,7 +240,7 @@ aprilcyl export-obj models/shaft50 -o shaft50.obj   # OBJ + MTL, black / white m
 ```
 
 The OBJ opens in Blender, MeshLab, Fusion 360 (as a mesh) and SolidWorks (as a graphics body). The
-3MF also opens directly in most CAD and 3D tools. `docs/make_media.py` rebuilds the animation and
+3MF also opens directly in most CAD and 3D tools. `docs/make_media.py` rebuilds the animations and
 the viewer above.
 
 ## Check a design before printing

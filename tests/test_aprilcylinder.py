@@ -158,3 +158,19 @@ def test_viewer_and_obj(tmp_path):
     assert sum(ln.startswith("v ") for ln in lines) == len(V)
     assert sum(ln.startswith("f ") for ln in lines) == len(T)
     assert "usemtl white" in obj and "usemtl black" in obj
+
+
+def test_rotation_jig_example(tmp_path):
+    """The committed example output is what paint-stl makes from the committed STL."""
+    jig = EXAMPLES / "rotation_jig"
+    cfg = paint_stl(jig / "rotation_cap_zig_v1.0_h120_d50_fllet.STL", tmp_path / "cap", up_axis="y",
+                    first_id=810, margin_mm=1.0, preview=False)
+    ref = json.loads((jig / "cap_h120" / "config.json").read_text(encoding="utf-8"))
+    assert cfg["tag_ids"] == ref["tag_ids"] == list(range(810, 819))
+    for a, b in zip(cfg["markers"], ref["markers"]):
+        assert np.allclose(a["corners_mm"], b["corners_mm"], atol=1e-3)
+    V, T = load_painted_mesh(tmp_path / "cap")
+    m = Mesh()
+    for a, b, c, _ in T:
+        m.tri(V[a], V[b], V[c], np.cross(V[b] - V[a], V[c] - V[a]))
+    assert m.is_closed()
