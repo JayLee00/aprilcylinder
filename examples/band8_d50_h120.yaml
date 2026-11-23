@@ -1,0 +1,24 @@
+# Round shaft (50 mm) with an octagonal marker band at the bottom and a marker on the top face.
+#   aprilcyl generate examples/band8_d50_h120.yaml
+output: models/band8_d50_h120
+name: band8_d50_h120
+dictionary: 4x4_1000
+first_id: 100          # keep IDs distinct between targets that share a scene
+margin_mm: 1.0         # white margin around every marker
+body: white            # white body, black marker cells (filament 1 = black, 2 = white)
+segments: 128          # facets of the round section
+phase_deg: 0           # +X of the target goes through the centre of band face 0
+sections:              # bottom to top
+  - type: polygon
+    sides: 8
+    face_mm: 22        # face width; the band apothem follows from it (26.56 mm here)
+    height_mm: 22
+    markers: true
+  - type: cylinder
+    diameter_mm: 50
+    height_mm: 98
+caps:
+  top:
+    marker: true       # square_mm: 34 to set the marker square (incl. margin) yourself
+  bottom:
+    marker: false

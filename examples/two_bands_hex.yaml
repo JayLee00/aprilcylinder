@@ -1,0 +1,27 @@
+# Thin shaft (30 mm) with hexagonal bands at both ends, two markers stacked on each upper face,
+# and markers on both end faces. Useful when either end can be hidden by a hand or a fixture.
+#   aprilcyl generate examples/two_bands_hex.yaml
+output: models/two_bands_hex
+name: two_bands_hex
+dictionary: 4x4_1000
+first_id: 200
+margin_mm: 1.0
+body: white
+sections:
+  - type: polygon
+    sides: 6
+    across_flats_mm: 40
+    height_mm: 23.09
+  - type: cylinder
+    diameter_mm: 30
+    height_mm: 60
+  - type: polygon
+    sides: 6
+    across_flats_mm: 40
+    height_mm: 44
+    rows: 2
+caps:
+  top:
+    marker: true
+  bottom:
+    marker: true
