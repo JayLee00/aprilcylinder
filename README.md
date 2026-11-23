@@ -1,5 +1,10 @@
 # aprilcylinder
 
+<p align="center">
+  <a href="https://jaylee00.github.io/aprilcylinder/"><img src="docs/demo.gif" width="460" alt="A cylinder target with an octagonal marker band turning about Z on a base; the IDs of the tags facing the camera change with the angle"></a>
+</p>
+<p align="center"><b><a href="https://jaylee00.github.io/aprilcylinder/">Open the interactive 3D viewer</a></b>: drag to orbit, turn the 1-DoF joint about Z, see which tags face the camera.</p>
+
 3D-printable **cylindrical fiducial targets** and **rotation-angle / axis tracking** for round objects,
 built on [aprilcube](https://github.com/younghyopark/aprilcube) by Younghyo Park and Pulkit Agrawal.
 
@@ -20,6 +25,7 @@ What it does:
 | `aprilcyl merge` | Several targets and plain STL parts in **one 3MF**, each movable on its own |
 | `aprilcyl selftest` | Synthetic render + real detector: detection rate and angle error **before printing** |
 | `aprilcyl track` / `CylinderTracker` | Live **angle about the axis**, unwrapped turns, tilt and **axis position** |
+| `aprilcyl view` / `aprilcyl export-obj` | **3D viewer** (one HTML file) with the target turning about Z on its fixture; OBJ for CAD tools |
 
 Detection is done by aprilcube's detector (multi-marker PnP with RANSAC, LM refinement and a Kalman
 filter); `config.json` files written here are read by it unchanged.
@@ -164,6 +170,30 @@ Webcam demo (press `z` to zero, `q` to quit), and a RealSense example in `exampl
 ```bash
 aprilcyl track models/shaft50 --camera 0 --intrinsics calib.json
 ```
+
+## See it in 3D
+
+```bash
+aprilcyl view models/shaft50 -o shaft50.html                     # the target alone
+aprilcyl view models/shaft50 --fixture demo -o shaft50_demo.html  # on a generic base
+aprilcyl view models/part --fixture base.STL --fixture-up-axis y --fixture-axis 25 25 --seat 8 -o jig.html
+```
+
+The page opens straight into a 3D view (three.js, needs internet) that spins the target about its
+axis. Drag to orbit, use the slider to set the joint angle, toggle tag IDs and axes. The card lists
+the tags that currently face the camera, which is what the detector will use at that angle.
+
+`--fixture` adds a fixed part: `demo` (a square plate with a post), or your own STL. Give its up
+axis, where the rotation axis is in it (`--fixture-axis X Y`, after re-orienting) and the height at
+which the target's bottom face sits (`--seat`).
+
+```bash
+aprilcyl export-obj models/shaft50 -o shaft50.obj   # OBJ + MTL, black / white materials, mm
+```
+
+The OBJ opens in Blender, MeshLab, Fusion 360 (as a mesh) and SolidWorks (as a graphics body). The
+3MF also opens directly in most CAD and 3D tools. `docs/make_media.py` rebuilds the animation and
+the viewer above.
 
 ## Check a design before printing
 

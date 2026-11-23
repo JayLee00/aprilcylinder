@@ -141,3 +141,20 @@ def test_config_is_readable_by_aprilcube(tmp_path):
     det = aprilcube.detector(str(tmp_path / "c"), {"fx": 900, "fy": 900, "cx": 640, "cy": 360})
     cfg = json.loads((tmp_path / "c" / "config.json").read_text())
     assert sorted(det.valid_ids) == sorted(cfg["tag_ids"])
+
+
+def test_viewer_and_obj(tmp_path):
+    from aprilcylinder.viewer import demo_fixture, export_obj, scene_payload, write_viewer
+    generate(simple_spec(40, 90, sides=8, name="c"), tmp_path / "c", preview=False)
+    fixture, seat = demo_fixture()
+    sc = scene_payload(tmp_path / "c", fixture=fixture, seat_z=seat, fixture_name="demo base")
+    assert [p["joint"] for p in sc["parts"]] == ["fixed", "revolute"]
+    assert min(m["c"][2] for m in sc["markers"]) > seat
+    html = write_viewer([sc, scene_payload(tmp_path / "c")], tmp_path / "v.html").read_text(encoding="utf-8")
+    assert html.startswith("<!doctype html>") and "three@0.160.0" in html and '"joint":"revolute"' in html
+    obj = export_obj(tmp_path / "c", tmp_path / "c.obj").read_text()
+    V, T = load_painted_mesh(tmp_path / "c")
+    lines = obj.splitlines()
+    assert sum(ln.startswith("v ") for ln in lines) == len(V)
+    assert sum(ln.startswith("f ") for ln in lines) == len(T)
+    assert "usemtl white" in obj and "usemtl black" in obj
